@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Duty Officer for Schools | Intelligent Morning Safety Directive</title>
+  <meta name="description" content="Automated daily air quality duty officer for school principals across India. Reads CPCB AQI telemetry, applies safety policies for PE, recess, assembly, and broadcasts bilingual alerts.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation Bar -->
+    <header class="top-nav" role="banner">
+      <div class="nav-left">
+        <div class="brand-logo" id="brand-logo">
+          <div class="logo-icon">🏫</div>
+          <div>
+            <h1 class="brand-title">Air Duty Officer</h1>
+            <p class="brand-subtitle">For Schools • WeMakeDevs x AWS Bharat Builds</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <div class="school-pill" id="school-info-pill">
+          <span class="pulse-dot"></span>
+          <span id="nav-school-name" class="school-name">Delhi Model School</span>
+          <span id="nav-school-coords" class="school-coords">(28.61° N, 77.21° E)</span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <!-- Demo Mode Toggle -->
+        <div class="demo-toggle-wrapper" id="demo-toggle-group">
+          <label class="demo-switch" for="demo-mode-checkbox" title="Toggle between Live Open-Meteo Telemetry and Recorded Severe Day Fixture">
+            <input type="checkbox" id="demo-mode-checkbox">
+            <span class="slider"></span>
+          </label>
+          <span id="mode-status-badge" class="mode-badge mode-live">LIVE TELEMETRY</span>
+        </div>
+
+        <button id="run-now-btn" class="btn btn-primary" title="Trigger instant evaluation loop">
+          <span class="btn-icon">⚡</span> Run Now
+        </button>
+
+        <button id="settings-btn" class="btn btn-secondary" title="Configure School and Safety Policy Thresholds">
+          <span class="btn-icon">⚙️</span> Policy
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container" id="main-content">
+      <!-- Error / Offline Alert Banner (hidden by default) -->
+      <div id="notice-banner" class="notice-banner hidden" role="alert">
+        <span id="notice-icon">ℹ️</span>
+        <span id="notice-text">Live telemetry unavailable; switched smoothly to Demo Mode.</span>
+        <button id="notice-dismiss-btn" class="notice-close">&times;</button>
+      </div>
+
+      <!-- Primary Directive Hero Card -->
+      <section class="hero-card" id="hero-directive-card">
+        <div class="hero-header">
+          <div class="status-indicator-block">
+            <span id="status-badge" class="status-pill status-hazardous">HAZARDOUS</span>
+            <span id="eval-time-badge" class="eval-time">Assessed for 06:00 IST Morning Schedule</span>
+          </div>
+          <div class="telemetry-summary-chips">
+            <div class="chip chip-aqi">
+              <span class="chip-label">CPCB AQI</span>
+              <span id="hero-aqi-val" class="chip-val">451</span>
+              <span id="hero-aqi-category" class="chip-sub">Severe</span>
+            </div>
+            <div class="chip">
+              <span class="chip-label">PM2.5</span>
+              <span id="hero-pm25-val" class="chip-val">315.6</span>
+              <span class="chip-unit">µg/m³</span>
+            </div>
+            <div class="chip">
+              <span class="chip-label">PM10</span>
+              <span id="hero-pm10-val" class="chip-val">462.4</span>
+              <span class="chip-unit">µg/m³</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Giant Clear One-Sentence Decision Headline -->
+        <div class="directive-headline-box">
+          <h2 id="directive-headline" class="directive-headline">Keep PE & Assembly Indoors Today: Severe Air Quality</h2>
+          <p id="directive-subhead" class="directive-subhead">Deterministic safety policy has restricted all high-exertion outdoor physical activities.</p>
+        </div>
+
+        <!-- 5 Action Grid -->
+        <div class="actions-grid" id="actions-grid">
+          <div class="action-card" id="action-pe">
+            <div class="action-icon">🏃‍♂️</div>
+            <div class="action-info">
+              <span class="action-name">Outdoor PE</span>
+              <span id="action-pe-val" class="action-status status-danger">INDOOR ONLY</span>
+            </div>
+          </div>
+
+          <div class="action-card" id="action-assembly">
+            <div class="action-icon">📢</div>
+            <div class="action-info">
+              <span class="action-name">Morning Assembly</span>
+              <span id="action-assembly-val" class="action-status status-danger">INDOOR ONLY</span>
+            </div>
+          </div>
+
+          <div class="action-card" id="action-recess">
+            <div class="action-icon">🥪</div>
+            <div class="action-info">
+              <span class="action-name">Recess & Lunch</span>
+              <span id="action-recess-val" class="action-status status-danger">INDOOR ONLY</span>
+            </div>
+          </div>
+
+          <div class="action-card" id="action-masks">
+            <div class="action-icon">😷</div>
+            <div class="action-info">
+              <span class="action-name">Mask Advisory</span>
+              <span id="action-masks-val" class="action-status status-danger">MANDATORY ALL</span>
+            </div>
+          </div>
+
+          <div class="action-card" id="action-ventilation">
+            <div class="action-icon">💨</div>
+            <div class="action-info">
+              <span class="action-name">Ventilation</span>
+              <span id="action-ventilation-val" class="action-status status-warning">AIR FILTERS ON</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grid: Why Today? (3 Reasons) & Best Window Highlight -->
+      <section class="split-section">
+        <!-- 3 Numerical Reasons -->
+        <div class="card glass-card why-card" id="why-reasons-card">
+          <div class="card-header">
+            <h3 class="card-title">🔍 Decision Rationale</h3>
+            <span class="badge-sub">Objective Telemetry</span>
+          </div>
+          <div class="reasons-list" id="reasons-container">
+            <!-- Dynamically populated -->
+            <div class="reason-item">
+              <div class="reason-num">1</div>
+              <p class="reason-text">Current CPCB AQI is 451 (Severe) with PM2.5 at 315.6 µg/m³.</p>
+            </div>
+            <div class="reason-item">
+              <div class="reason-num">2</div>
+              <p class="reason-text">Next 6-hour forecast peaks at AQI 493 (PM2.5 345.0 µg/m³).</p>
+            </div>
+            <div class="reason-item">
+              <div class="reason-num">3</div>
+              <p class="reason-text">45 sensitive students registered under respiratory protection protocol.</p>
+            </div>
+          </div>
+
+          <div class="sensitive-pupil-box" id="sensitive-pupils-box">
+            <div class="sensitive-icon">🫁</div>
+            <div class="sensitive-text">
+              <strong>Sensitive Students Protocol (<span id="sensitive-count-span">45</span> Students):</strong>
+              <p id="sensitive-notice-text">Exempt from any physical strain; inhalers must be in reach.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optimal Outdoor Window Card -->
+        <div class="card glass-card window-card" id="best-window-card">
+          <div class="card-header">
+            <h3 class="card-title">⭐ Best Outdoor Window Today</h3>
+            <span class="badge-sub">Lowest-PM Period</span>
+          </div>
+          <div class="window-content" id="window-content">
+            <div class="window-time-display">
+              <span class="window-icon">🌤️</span>
+              <div>
+                <div id="best-window-time" class="window-time">13:00 – 14:00</div>
+                <div class="window-subtitle">Targeted School Day Valley</div>
+              </div>
+            </div>
+            <div class="window-stats">
+              <div class="w-stat">
+                <span class="w-stat-label">Average PM2.5</span>
+                <span id="best-window-avg-pm" class="w-stat-val">212.8 µg/m³</span>
+              </div>
+              <div class="w-stat">
+                <span class="w-stat-label">Pollution Reduction</span>
+                <span id="best-window-reduction" class="w-stat-val text-green">-38% vs Peak</span>
+              </div>
+            </div>
+            <p id="best-window-advice" class="window-advice">
+              If outdoor movement or bus boarding must occur, schedule near early afternoon when atmospheric inversion lifts.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 24-Hour Forecast Chart Section -->
+      <section class="card glass-card forecast-section" id="forecast-section">
+        <div class="card-header chart-header">
+          <div>
+            <h3 class="card-title">📈 24-Hour PM2.5 Forecast & Outdoor Window</h3>
+            <p class="card-desc">Hourly atmospheric model (Open-Meteo Air Quality). Golden highlight marks the safest outdoor slot.</p>
+          </div>
+          <div class="legend-row">
+            <span class="legend-item"><span class="legend-color legend-pm25"></span> PM2.5 (µg/m³)</span>
+            <span class="legend-item"><span class="legend-color legend-severe"></span> CPCB Severe (250+)</span>
+            <span class="legend-item"><span class="legend-color legend-moderate"></span> CPCB Mod (60)</span>
+            <span class="legend-item"><span class="legend-color legend-window"></span> Best Window</span>
+          </div>
+        </div>
+        <div class="chart-container" id="chart-wrapper">
+          <canvas id="forecastCanvas" width="900" height="260"></canvas>
+        </div>
+      </section>
+
+      <!-- Bilingual Parent Message Preview & Dispatch -->
+      <section class="split-section">
+        <div class="card glass-card message-card" id="parent-message-card">
+          <div class="card-header message-header">
+            <div>
+              <h3 class="card-title">📱 Parent Alert Dispatch</h3>
+              <p class="card-desc">Ready for SMS/WhatsApp/Email broadcast</p>
+            </div>
+            <div class="lang-toggle-group">
+              <button id="lang-en-btn" class="lang-btn active">English</button>
+              <button id="lang-hi-btn" class="lang-btn">हिन्दी (Hindi)</button>
+            </div>
+          </div>
+
+          <div class="message-preview-bubble">
+            <div class="bubble-header">
+              <span class="bubble-sender">🏫 Air Duty Officer • Official School Bulletin</span>
+              <span id="msg-char-count" class="bubble-chars">210 chars</span>
+            </div>
+            <p id="parent-msg-content" class="bubble-body">
+              "Dear Parents, today's AQI is 451 (Severe). To protect student health, all PE and outdoor assemblies are moved indoors. Classrooms will remain closed with air filtration. Students are advised to wear masks during school transit."
+            </p>
+          </div>
+
+          <div class="message-actions">
+            <button id="copy-msg-btn" class="btn btn-outline">
+              <span class="btn-icon">📋</span> Copy Message
+            </button>
+            <div class="sns-delivery-status" id="sns-status-pill">
+              <span class="sns-dot"></span>
+              <span id="sns-status-text">SNS Delivery: Simulated (Local Mode)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7-Day Decision Audit History -->
+        <div class="card glass-card history-card" id="history-card">
+          <div class="card-header">
+            <h3 class="card-title">🗓️ 7-Day Decision History</h3>
+            <span class="badge-sub">DynamoDB Audit Trail</span>
+          </div>
+          <div class="history-list" id="history-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <strong>Air Duty Officer for Schools</strong> • Environmental Hacks (WeMakeDevs x AWS Bharat Builds)
+      </div>
+      <div class="footer-right">
+        <span>AWS Serverless: Lambda • EventBridge • DynamoDB • SNS • Strands Agents SDK • Bedrock</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Settings & Policy Configuration Modal -->
+  <div id="settings-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title" class="modal-title">⚙️ School Safety Policy Configuration</h3>
+        <button id="modal-close-btn" class="modal-close">&times;</button>
+      </div>
+
+      <form id="settings-form" class="modal-body">
+        <div class="form-section-title">School Profile</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-school-name">School Name</label>
+            <input type="text" id="cfg-school-name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="cfg-sensitive-count">Sensitive Students (Asthma/Allergy Count)</label>
+            <input type="number" id="cfg-sensitive-count" name="sensitive_students_count" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-lat">Latitude</label>
+            <input type="number" step="0.0001" id="cfg-lat" name="lat" required>
+          </div>
+          <div class="form-group">
+            <label for="cfg-lon">Longitude</label>
+            <input type="number" step="0.0001" id="cfg-lon" name="lon" required>
+          </div>
+        </div>
+
+        <div class="form-section-title">Editable Policy Thresholds (CPCB AQI)</div>
+        <p class="form-hint">Note: Marked as editable school defaults, not statutory government rules.</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-pe-thresh">Indoor PE Threshold (AQI)</label>
+            <input type="number" id="cfg-pe-thresh" name="pe_indoor_threshold" value="201">
+          </div>
+          <div class="form-group">
+            <label for="cfg-assembly-thresh">Indoor Assembly Threshold (AQI)</label>
+            <input type="number" id="cfg-assembly-thresh" name="assembly_indoor_threshold" value="150">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-mask-thresh">Mandatory Mask Threshold (AQI)</label>
+            <input type="number" id="cfg-mask-thresh" name="mask_mandatory_threshold" value="301">
+          </div>
+          <div class="form-group">
+            <label for="cfg-spike-thresh">Forecast Spike Buffer (AQI)</label>
+            <input type="number" id="cfg-spike-thresh" name="forecast_spike_buffer" value="250">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="modal-save-btn" class="btn btn-primary">Save Policy Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast hidden">Copied to clipboard!</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

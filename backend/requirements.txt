@@ -1,0 +1,7 @@
+# Backend runtime & test dependencies
+requests==2.32.3
+boto3==1.36.10
+python-dotenv==1.0.1
+pydantic==2.10.6
+pytest==8.3.4
+strands-agents==1.59.0

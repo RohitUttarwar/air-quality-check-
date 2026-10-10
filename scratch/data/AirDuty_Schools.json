@@ -1,0 +1,54 @@
+{
+  "test-school-1": {
+    "school_id": "test-school-1",
+    "name": "Test Academy",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "grade_range": "K-12",
+    "sensitive_students_count": 55,
+    "contact_emails": [
+      "principal@school.edu"
+    ],
+    "contact_phones": [
+      "+919876543210"
+    ],
+    "policy_thresholds": {
+      "pe_indoor_threshold": 201,
+      "recess_indoor_threshold": 201,
+      "assembly_indoor_threshold": 150,
+      "mask_recommended_threshold": 150,
+      "mask_mandatory_threshold": 301,
+      "sensitive_trigger_threshold": 101,
+      "forecast_spike_buffer": 250,
+      "school_start_hour": 7,
+      "school_end_hour": 15
+    },
+    "updated_at": "2026-10-10T11:57:39.955610+00:00"
+  },
+  "delhi-model-school-01": {
+    "school_id": "delhi-model-school-01",
+    "name": "Green Valley International",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "grade_range": "K-12",
+    "sensitive_students_count": 60,
+    "contact_emails": [
+      "principal@school.edu"
+    ],
+    "contact_phones": [
+      "+919876543210"
+    ],
+    "policy_thresholds": {
+      "pe_indoor_threshold": 201,
+      "recess_indoor_threshold": 201,
+      "assembly_indoor_threshold": 150,
+      "mask_recommended_threshold": 150,
+      "mask_mandatory_threshold": 301,
+      "sensitive_trigger_threshold": 101,
+      "forecast_spike_buffer": 250,
+      "school_start_hour": 7,
+      "school_end_hour": 15
+    },
+    "updated_at": "2026-10-10T11:57:39.972906+00:00"
+  }
+}

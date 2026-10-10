@@ -1,0 +1,224 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Air Duty Officer for Schools - WeMakeDevs x AWS Bharat Builds Tour (Air Track)
+  Serverless automated morning air quality assessment, CPCB AQI decision engine,
+  Strands Agents SDK + Amazon Bedrock integration, DynamoDB persistence, and SNS alerts.
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: 'anthropic.claude-3-haiku-20240307-v1:0'
+    Description: Amazon Bedrock Foundation Model ID (e.g. anthropic.claude-3-haiku-20240307-v1:0 or amazon.nova-micro-v1:0)
+
+  AlertEmail:
+    Type: String
+    Default: 'principal@school.edu'
+    Description: Email address for automated morning safety bulletins via Amazon SNS
+
+  WaqiToken:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: Optional WAQI API token (aqicn.org) for ground station cross-checks
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        DYNAMODB_SCHOOLS_TABLE: !Ref SchoolsTable
+        DYNAMODB_DECISIONS_TABLE: !Ref DecisionsTable
+        SNS_TOPIC_ARN: !Ref AlertsTopic
+        WAQI_TOKEN: !Ref WaqiToken
+        DEFAULT_SCHOOL_ID: 'delhi-model-school-01'
+
+Resources:
+  ##############################################################################
+  # DynamoDB Tables: Schools & Decisions
+  ##############################################################################
+  SchoolsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AirDuty_Schools
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: school_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: school_id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  DecisionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AirDuty_Decisions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: school_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: school_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ##############################################################################
+  # Amazon SNS Topic for Multi-Channel Alerts
+  ##############################################################################
+  AlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AirDuty_Alerts
+      DisplayName: Air Duty Officer School Safety Directives
+
+  AlertsEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref AlertsTopic
+      Endpoint: !Ref AlertEmail
+
+  ##############################################################################
+  # HTTP API Gateway (API Gateway v2)
+  ##############################################################################
+  HttpApiGateway:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  ##############################################################################
+  # AWS Lambda Functions: HTTP API Handler & Scheduled Morning Assessment
+  ##############################################################################
+  AirDutyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: airduty.handler.lambda_handler
+      Description: Air Duty Officer HTTP API and scheduled safety evaluator
+      Policies:
+        # Least-privilege IAM policies
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SchoolsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DecisionsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt AlertsTopic.TopicName
+        - Statement:
+            - Sid: BedrockInvokePolicy
+              Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource: '*'
+      Events:
+        # 1. API Gateway HTTP Routes
+        GetStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /status
+            Method: GET
+        PostRun:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /run
+            Method: POST
+        GetSchool:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /school
+            Method: GET
+        PutSchool:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /school
+            Method: PUT
+        GetHistory:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /history
+            Method: GET
+
+        # 2. EventBridge Morning Schedule: 06:00 IST (Indian Standard Time)
+        # IST is UTC+5:30. 06:00 IST = 00:30 UTC.
+        # cron(Minutes Hours Day-of-month Month Day-of-week Year)
+        # Run every weekday Monday through Friday at 00:30 UTC (06:00 IST)
+        MorningSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(30 0 ? * MON-FRI *)
+            Name: AirDuty_MorningEvaluation_0600IST
+            Description: Triggers daily automated air quality safety evaluation at 06:00 IST
+            Enabled: true
+
+  ##############################################################################
+  # Static Frontend Hosting (S3 Bucket)
+  ##############################################################################
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'air-duty-officer-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+
+Outputs:
+  ApiEndpoint:
+    Description: HTTP API Gateway Endpoint URL
+    Value: !Sub 'https://${HttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com'
+
+  StatusApiUrl:
+    Description: Public status API check
+    Value: !Sub 'https://${HttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com/status'
+
+  AlertsTopicArn:
+    Description: SNS Alerts Topic ARN
+    Value: !Ref AlertsTopic
+
+  FrontendWebsiteUrl:
+    Description: S3 Static Website Hosting URL for Principal Dashboard
+    Value: !GetAtt FrontendBucket.WebsiteURL
