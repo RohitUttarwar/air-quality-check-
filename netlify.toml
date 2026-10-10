@@ -1,0 +1,5 @@
+# The static dashboard lives in frontend/. The Python backend targets AWS (see template.yaml)
+# and is not deployed to Netlify, so no build step is needed.
+[build]
+  publish = "frontend"
+  command = ""
